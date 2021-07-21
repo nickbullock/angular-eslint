@@ -1,12 +1,13 @@
 import type {
-  TmplAstTextAttribute,
   TmplAstBoundAttribute,
+  TmplAstTextAttribute,
 } from '@angular/compiler';
-
 import {
   createESLintRule,
   getTemplateParserServices,
 } from '../utils/create-eslint-rule';
+import { getDomElements } from '../utils/get-dom-elements';
+import { toPattern } from '../utils/to-pattern';
 
 type Options = [];
 export type MessageIds = 'noAutofocus';
@@ -17,29 +18,36 @@ export default createESLintRule<Options, MessageIds>({
   meta: {
     type: 'suggestion',
     docs: {
-      description: `Ensure that autofocus attribute is not used`,
+      description: 'Ensures that the `autofocus` attribute is not used',
       category: 'Best Practices',
       recommended: false,
     },
+    fixable: 'code',
     schema: [],
     messages: {
       noAutofocus:
-        'autofocus attribute should not be used, as it reduces usability and accessibility for users',
+        'The `autofocus` attribute should not be used, as it reduces usability and accessibility for users',
     },
   },
   defaultOptions: [],
   create(context) {
     const parserServices = getTemplateParserServices(context);
+    const elementNamePattern = toPattern([...getDomElements()]);
 
     return {
-      'TextAttribute[name="autofocus"], BoundAttribute[name="autofocus"]'(
-        node: TmplAstTextAttribute | TmplAstBoundAttribute,
-      ) {
-        const loc = parserServices.convertNodeSourceSpanToLoc(node.sourceSpan);
+      [`Element[name=${elementNamePattern}] > :matches(BoundAttribute, TextAttribute)[name="autofocus"]`]({
+        sourceSpan,
+      }: TmplAstBoundAttribute | TmplAstTextAttribute) {
+        const loc = parserServices.convertNodeSourceSpanToLoc(sourceSpan);
 
         context.report({
           loc,
           messageId: 'noAutofocus',
+          fix: (fixer) =>
+            fixer.removeRange([
+              sourceSpan.start.offset - 1,
+              sourceSpan.end.offset,
+            ]),
         });
       },
     };

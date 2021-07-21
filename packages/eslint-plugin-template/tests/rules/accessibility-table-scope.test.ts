@@ -12,26 +12,42 @@ import rule, { RULE_NAME } from '../../src/rules/accessibility-table-scope';
 const ruleTester = new RuleTester({
   parser: '@angular-eslint/template-parser',
 });
-
 const messageId: MessageIds = 'accessibilityTableScope';
 
 ruleTester.run(RULE_NAME, rule, {
-  valid: ['<th></th>', '<th scope="col"></th>', '<th [attr.scope]="col"></th>'],
+  valid: [
+    '<th></th>',
+    '<th scope="col"></th>',
+    `<th [scope]="'col'"></th>`,
+    '<th [attr.scope]="scope"></th>',
+    '<div Scope="col"></div>',
+    '<button [appscope]="col"></button>',
+    '<app-table scope></app-table>',
+    '<app-row [scope]="row"></app-row>',
+  ],
   invalid: [
     convertAnnotatedSourceToFailureCase({
-      messageId,
-      description: 'should fail when element other than th has scope',
+      description: 'should fail if `scope` attribute is not on `th` element',
       annotatedSource: `
-        <div scope></div>
-             ~~~~~
+        {{ test }}<div scope></div>
+                       ~~~~~
+      `,
+      messageId,
+      annotatedOutput: `
+        {{ test }}<div></div>
+                       
       `,
     }),
     convertAnnotatedSourceToFailureCase({
-      messageId,
-      description: 'should fail when element other than th has scope input',
+      description: 'should fail if `scope` input is not on `th` element',
       annotatedSource: `
-        <div [attr.scope]="scope"></div>
+        <div [attr.scope]="scope"></div><p></p>
              ~~~~~~~~~~~~~~~~~~~~
+      `,
+      messageId,
+      annotatedOutput: `
+        <div></div><p></p>
+             
       `,
     }),
   ],

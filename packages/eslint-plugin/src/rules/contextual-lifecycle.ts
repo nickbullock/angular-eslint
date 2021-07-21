@@ -8,15 +8,15 @@ import {
   PIPE_CLASS_DECORATOR,
 } from '../utils/selectors';
 import {
-  ANGULAR_CLASS_DECORATOR_LIFECYCLE_METHOD_MAPPER,
   AngularClassDecorators,
+  ANGULAR_CLASS_DECORATOR_LIFECYCLE_METHOD_MAPPER,
   getDeclaredMethods,
   getMethodName,
   isAngularLifecycleMethod,
 } from '../utils/utils';
 
 type Options = [];
-export type MessageIds = 'contextuaLifecycle';
+export type MessageIds = 'contextualLifecycle';
 export const RULE_NAME = 'contextual-lifecycle';
 
 export default createESLintRule<Options, MessageIds>({
@@ -31,7 +31,7 @@ export default createESLintRule<Options, MessageIds>({
     },
     schema: [],
     messages: {
-      contextuaLifecycle: `This lifecycle method is not called for {{decorator}}`,
+      contextualLifecycle: `Angular will not invoke the \`{{methodName}}\` lifecycle method within \`@{{classDecoratorName}}()\` classes`,
     },
   },
   defaultOptions: [],
@@ -41,15 +41,15 @@ export default createESLintRule<Options, MessageIds>({
       decorator: AngularClassDecorators,
     ) {
       const classDeclaration = parent as TSESTree.ClassDeclaration;
-      const allowedMethods = ANGULAR_CLASS_DECORATOR_LIFECYCLE_METHOD_MAPPER.get(
-        decorator,
-      );
+      const allowedMethods =
+        ANGULAR_CLASS_DECORATOR_LIFECYCLE_METHOD_MAPPER.get(decorator);
       const declaredMethods = getDeclaredMethods(classDeclaration);
 
       for (const method of declaredMethods) {
         const methodName = getMethodName(method);
 
         if (
+          !methodName ||
           !isAngularLifecycleMethod(methodName) ||
           allowedMethods?.has(methodName)
         ) {
@@ -58,8 +58,8 @@ export default createESLintRule<Options, MessageIds>({
 
         context.report({
           node: method.key,
-          messageId: 'contextuaLifecycle',
-          data: { decorator },
+          messageId: 'contextualLifecycle',
+          data: { classDecoratorName: decorator, methodName },
         });
       }
     }

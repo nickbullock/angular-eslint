@@ -1,16 +1,10 @@
 {
   "name": "@angular-eslint/template-parser",
-  "version": "4.2.0",
+  "version": "12.2.0",
   "description": "Angular Template parser for ESLint",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "rimraf ./dist && microbundle --tsconfig tsconfig.build.json --no-sourcemap --target=node --compress --format=cjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "jest --coverage",
-    "clean": "rimraf ./dist"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/angular-eslint/angular-eslint.git",
@@ -26,9 +20,9 @@
     "eslint-scope": "^5.1.0"
   },
   "peerDependencies": {
-    "@angular/compiler": ">= 11.2.0 < 12.0.0",
+    "@angular/compiler": ">= 12.0.0 < 13.0.0",
     "eslint": "*",
     "typescript": "*"
   },
-  "gitHead": "e69a6b00613084b68ee0c7b8f5026266c1f6f368"
+  "gitHead": "d1d0e9f61f6a864d14507aa09c4b08c085309e7d"
 }

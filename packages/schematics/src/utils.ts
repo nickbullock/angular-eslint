@@ -18,12 +18,14 @@ import stripJsonComments from 'strip-json-comments';
  * @param path The path to the JSON file
  * @returns The JSON data in the file.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function readJsonInTree<T = any>(host: Tree, path: string): T {
   if (!host.exists(path)) {
     throw new Error(`Cannot find ${path}`);
   }
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const contents = stripJsonComments(host.read(path)!.toString('utf-8'));
+  const contents = stripJsonComments(
+    (host.read(path) as Buffer).toString('utf-8'),
+  );
   try {
     return JSON.parse(contents);
   } catch (e) {
@@ -37,6 +39,7 @@ export function readJsonInTree<T = any>(host: Tree, path: string): T {
  * @param callback Manipulation of the JSON data
  * @returns A rule which updates a JSON file file in a Tree
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function updateJsonInTree<T = any, O = T>(
   path: string,
   callback: (json: T, context: SchematicContext) => O,
@@ -62,7 +65,7 @@ export function getWorkspacePath(host: Tree) {
 
 type TargetsConfig = Record<string, { builder: string; options: unknown }>;
 
-function getTargetsConfigFromProject(
+export function getTargetsConfigFromProject(
   projectConfig: { architect?: TargetsConfig } & { targets?: TargetsConfig },
 ): TargetsConfig | null {
   if (!projectConfig) {
@@ -86,6 +89,7 @@ export function isTSLintUsedInWorkspace(tree: Tree): boolean {
 
   for (const [, projectConfig] of Object.entries(
     workspaceJson.projects,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ) as any) {
     const targetsConfig = getTargetsConfigFromProject(projectConfig);
     if (!targetsConfig) {
@@ -107,6 +111,7 @@ export function isTSLintUsedInWorkspace(tree: Tree): boolean {
   return false;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function getProjectConfig(host: Tree, name: string): any {
   const workspaceJson = readJsonInTree(host, getWorkspacePath(host));
   const projectConfig = workspaceJson.projects[name];
@@ -126,10 +131,11 @@ export function offsetFromRoot(fullPathToSourceDir: string): string {
   return offset;
 }
 
-function serializeJson(json: any): string {
+function serializeJson(json: unknown): string {
   return `${JSON.stringify(json, null, 2)}\n`;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function updateWorkspaceInTree<T = any, O = T>(
   callback: (json: T, context: SchematicContext, host: Tree) => O,
 ): Rule {
@@ -186,9 +192,9 @@ export function visitNotIgnoredFiles(
     let ig: Ignore;
     if (host.exists('.gitignore')) {
       ig = ignore();
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      ig.add(host.read('.gitignore')!.toString());
+      ig.add((host.read('.gitignore') as Buffer).toString());
     }
+
     function visit(_dir: Path) {
       if (_dir && ig?.ignores(_dir)) {
         return;
@@ -215,17 +221,22 @@ export function visitNotIgnoredFiles(
 
 type ProjectType = 'application' | 'library';
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function setESLintProjectBasedOnProjectType(
   projectRoot: string,
   projectType: ProjectType,
+  hasE2e?: boolean,
 ) {
   let project;
   if (projectType === 'application') {
     project = [
       `${projectRoot}/tsconfig.app.json`,
       `${projectRoot}/tsconfig.spec.json`,
-      `${projectRoot}/e2e/tsconfig.json`,
     ];
+
+    if (hasE2e) {
+      project.push(`${projectRoot}/e2e/tsconfig.json`);
+    }
   }
   // Libraries don't have an e2e directory
   if (projectType === 'library') {
@@ -237,7 +248,11 @@ export function setESLintProjectBasedOnProjectType(
   return project;
 }
 
-export function createRootESLintConfig(prefix: string | null) {
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function createRootESLintConfig(
+  prefix: string | null,
+  hasE2e?: boolean,
+) {
   let codeRules;
   if (prefix) {
     codeRules = {
@@ -261,7 +276,9 @@ export function createRootESLintConfig(prefix: string | null) {
       {
         files: ['*.ts'],
         parserOptions: {
-          project: ['tsconfig.json', 'e2e/tsconfig.json'],
+          project: hasE2e
+            ? ['tsconfig.json', 'e2e/tsconfig.json']
+            : ['tsconfig.json'],
           createDefaultProgram: true,
         },
         extends: [
@@ -285,6 +302,7 @@ function createProjectESLintConfig(
   projectRoot: string,
   projectType: ProjectType,
   prefix: string,
+  hasE2e: boolean,
 ) {
   return {
     extends: `${offsetFromRoot(rootPath)}.eslintrc.json`,
@@ -293,7 +311,11 @@ function createProjectESLintConfig(
       {
         files: ['*.ts'],
         parserOptions: {
-          project: setESLintProjectBasedOnProjectType(projectRoot, projectType),
+          project: setESLintProjectBasedOnProjectType(
+            projectRoot,
+            projectType,
+            hasE2e,
+          ),
           createDefaultProgram: true,
         },
         rules: {
@@ -319,9 +341,14 @@ function createProjectESLintConfig(
 export function createESLintConfigForProject(projectName: string): Rule {
   return (tree: Tree) => {
     const angularJSON = readJsonInTree(tree, 'angular.json');
-    const { root: projectRoot, projectType, prefix } = angularJSON.projects[
-      projectName
-    ];
+    const {
+      root: projectRoot,
+      projectType,
+      prefix,
+    } = angularJSON.projects[projectName];
+
+    const hasE2e = determineTargetProjectHasE2E(angularJSON, projectName);
+
     /**
      * If the root is an empty string it must be the initial project created at the
      * root by the Angular CLI's workspace schematic
@@ -337,6 +364,7 @@ export function createESLintConfigForProject(projectName: string): Rule {
           projectRoot,
           projectType,
           prefix,
+          hasE2e,
         ),
     );
   };
@@ -357,17 +385,22 @@ function createRootESLintConfigFile(projectName: string): Rule {
   return (tree) => {
     const angularJSON = readJsonInTree(tree, getWorkspacePath(tree));
     let lintPrefix: string | null = null;
+    const hasE2e = determineTargetProjectHasE2E(angularJSON, projectName);
+
     if (angularJSON.projects?.[projectName]) {
       const { prefix } = angularJSON.projects[projectName];
       lintPrefix = prefix;
     }
+
     return updateJsonInTree('.eslintrc.json', () =>
-      createRootESLintConfig(lintPrefix),
+      createRootESLintConfig(lintPrefix, hasE2e),
     );
   };
 }
 
-export function sortObjectByKeys(obj: Record<string, unknown>) {
+export function sortObjectByKeys(
+  obj: Record<string, unknown>,
+): Record<string, unknown> {
   return Object.keys(obj)
     .sort()
     .reduce((result, key) => {
@@ -395,4 +428,16 @@ export function determineTargetProjectName(
     return projects[0];
   }
   return null;
+}
+
+/**
+ * Checking if the target project has e2e setup
+ * Method will check if angular project architect has e2e configuration to determine if e2e setup
+ */
+export function determineTargetProjectHasE2E(
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types, @typescript-eslint/no-explicit-any
+  angularJSON: any,
+  projectName: string,
+): boolean {
+  return !!getTargetsConfigFromProject(angularJSON.projects[projectName])?.e2e;
 }

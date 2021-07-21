@@ -1,5 +1,6 @@
-import type { AST, ASTWithSource } from '@angular/compiler';
+import type { AST } from '@angular/compiler';
 import {
+  ASTWithSource,
   LiteralArray,
   LiteralMap,
   LiteralPrimitive,
@@ -12,13 +13,15 @@ import {
   createESLintRule,
   getTemplateParserServices,
 } from '../utils/create-eslint-rule';
+import { getDomElements } from '../utils/get-dom-elements';
+import { toPattern } from '../utils/to-pattern';
 
 type Options = [];
 export type MessageIds =
   | 'accessibilityValidAria'
-  | 'accessibilityValidAriaValue';
+  | 'accessibilityValidAriaValue'
+  | 'suggestRemoveInvalidAria';
 export const RULE_NAME = 'accessibility-valid-aria';
-const ARIA_PATTERN = /^aria-.*/;
 
 export default createESLintRule<Options, MessageIds>({
   name: RULE_NAME,
@@ -29,6 +32,7 @@ export default createESLintRule<Options, MessageIds>({
         'Ensures that correct ARIA attributes and respective values are used',
       category: 'Best Practices',
       recommended: false,
+      suggestion: true,
     },
     schema: [],
     messages: {
@@ -36,20 +40,20 @@ export default createESLintRule<Options, MessageIds>({
         'The `{{attribute}}` is an invalid ARIA attribute',
       accessibilityValidAriaValue:
         'The `{{attribute}}` has an invalid value. Check the valid values at https://raw.githack.com/w3c/aria/stable/#roles',
+      suggestRemoveInvalidAria: 'Remove attribute `{{attribute}}`',
     },
   },
   defaultOptions: [],
   create(context) {
     const parserServices = getTemplateParserServices(context);
+    const elementNamePattern = toPattern([...getDomElements()]);
 
     return {
-      [`BoundAttribute[name=${ARIA_PATTERN}], TextAttribute[name=${ARIA_PATTERN}]`](
-        astAttribute: TmplAstBoundAttribute | TmplAstTextAttribute,
+      [`Element[name=${elementNamePattern}] > :matches(BoundAttribute, TextAttribute)[name=/^aria-.+/]`](
+        node: TmplAstBoundAttribute | TmplAstTextAttribute,
       ) {
-        const { name: attribute, sourceSpan } = astAttribute;
-        const ariaPropertyDefinition = aria.get(attribute as ARIAProperty) as
-          | ARIAPropertyDefinition
-          | undefined;
+        const { name: attribute, sourceSpan } = node;
+        const ariaPropertyDefinition = aria.get(attribute as ARIAProperty);
         const loc = parserServices.convertNodeSourceSpanToLoc(sourceSpan);
 
         if (!ariaPropertyDefinition) {
@@ -57,12 +61,23 @@ export default createESLintRule<Options, MessageIds>({
             loc,
             messageId: 'accessibilityValidAria',
             data: { attribute },
+            suggest: [
+              {
+                messageId: 'suggestRemoveInvalidAria',
+                data: { attribute },
+                fix: (fixer) =>
+                  fixer.removeRange([
+                    sourceSpan.start.offset - 1,
+                    sourceSpan.end.offset,
+                  ]),
+              },
+            ],
           });
 
           return;
         }
 
-        const ast = extractASTFrom(astAttribute);
+        const ast = extractASTFrom(node);
 
         if (
           canIgnoreNode(ast) ||
@@ -100,9 +115,10 @@ function canIgnoreNode(ast: unknown): boolean {
 
 function extractASTFrom(
   attribute: TmplAstBoundAttribute | TmplAstTextAttribute,
-): AST | TmplAstTextAttribute {
-  return attribute instanceof TmplAstBoundAttribute
-    ? (attribute.value as ASTWithSource).ast
+): AST | TmplAstBoundAttribute | TmplAstTextAttribute {
+  return attribute instanceof TmplAstBoundAttribute &&
+    attribute.value instanceof ASTWithSource
+    ? attribute.value.ast
     : attribute;
 }
 
@@ -113,7 +129,7 @@ function isBooleanLike(value: unknown): value is boolean | 'false' | 'true' {
 function isInteger(value: unknown): boolean {
   return (
     !Number.isNaN(value) &&
-    parseInt((Number(value) as unknown) as string) == value &&
+    parseInt(Number(value) as unknown as string) == value &&
     !Number.isNaN(parseInt(value as string, 10))
   );
 }
@@ -156,7 +172,7 @@ function isValidAriaPropertyValue(
     case 'token':
     case 'tokenlist': {
       const parsedAttributeValue = isBooleanLike(attributeValue)
-        ? JSON.parse((attributeValue as unknown) as string)
+        ? JSON.parse(attributeValue as unknown as string)
         : attributeValue;
       return Boolean(values?.includes(parsedAttributeValue));
     }

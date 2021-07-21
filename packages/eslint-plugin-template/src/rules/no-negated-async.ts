@@ -1,11 +1,15 @@
-import type { Binary, PrefixNot } from '@angular/compiler';
+import type { BindingPipe, PrefixNot } from '@angular/compiler';
 import {
   createESLintRule,
   ensureTemplateParser,
 } from '../utils/create-eslint-rule';
 
 type Options = [];
-export type MessageIds = 'noNegatedAsync' | 'noLooseEquality';
+export type MessageIds =
+  | 'noNegatedAsync'
+  | 'suggestFalseComparison'
+  | 'suggestNullComparison'
+  | 'suggestUndefinedComparison';
 export const RULE_NAME = 'no-negated-async';
 
 export default createESLintRule<Options, MessageIds>({
@@ -13,17 +17,18 @@ export default createESLintRule<Options, MessageIds>({
   meta: {
     type: 'suggestion',
     docs: {
-      description:
-        'Ensures that strict equality is used when evaluating negations on async pipe output',
+      description: 'Ensures that async pipe results are not negated',
       category: 'Best Practices',
       recommended: 'error',
+      suggestion: true,
     },
     schema: [],
     messages: {
       noNegatedAsync:
-        'Async pipes should not be negated. Use (observable | async) === (false | null | undefined) to check its value instead',
-      noLooseEquality:
-        'Async pipes must use strict equality `===` when comparing with `false`',
+        'Async pipe results should not be negated. Use `(observable | async) === false`, `(observable | async) === null`, or `(observable | async) === undefined` to check its value instead',
+      suggestFalseComparison: 'Compare with `false`',
+      suggestNullComparison: 'Compare with `null`',
+      suggestUndefinedComparison: 'Compare with `undefined`',
     },
   },
   defaultOptions: [],
@@ -32,28 +37,41 @@ export default createESLintRule<Options, MessageIds>({
     const sourceCode = context.getSourceCode();
 
     return {
-      'PrefixNot > BindingPipe[name=async]'({ parent }: { parent: PrefixNot }) {
+      ':not(PrefixNot) > PrefixNot > BindingPipe[name="async"]'({
+        parent: {
+          sourceSpan: { end, start },
+        },
+      }: BindingPipe & {
+        parent: PrefixNot;
+      }) {
         context.report({
           messageId: 'noNegatedAsync',
           loc: {
-            start: sourceCode.getLocFromIndex(parent.sourceSpan.start),
-            end: sourceCode.getLocFromIndex(parent.sourceSpan.end),
+            start: sourceCode.getLocFromIndex(start),
+            end: sourceCode.getLocFromIndex(end),
           },
-        });
-      },
-      'Binary[operation="=="] > BindingPipe[name=async]'({
-        parent,
-      }: {
-        parent: Binary;
-      }) {
-        context.report({
-          messageId: 'noLooseEquality',
-          loc: {
-            start: sourceCode.getLocFromIndex(parent.sourceSpan.start),
-            end: sourceCode.getLocFromIndex(parent.sourceSpan.end),
-          },
+          suggest: getSuggestionsSchema().map(
+            ({ messageId, textToInsert }) => ({
+              messageId,
+              fix: (fixer) => [
+                fixer.removeRange([start, start + 1]),
+                fixer.insertTextAfterRange([end, end], textToInsert),
+              ],
+            }),
+          ),
         });
       },
     };
   },
 });
+
+function getSuggestionsSchema() {
+  return [
+    { messageId: 'suggestFalseComparison', textToInsert: ' === false' },
+    { messageId: 'suggestNullComparison', textToInsert: ' === null' },
+    {
+      messageId: 'suggestUndefinedComparison',
+      textToInsert: ' === undefined',
+    },
+  ] as const;
+}

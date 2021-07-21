@@ -12,94 +12,125 @@ import rule, { RULE_NAME } from '../../src/rules/no-output-on-prefix';
 const ruleTester = new RuleTester({
   parser: '@typescript-eslint/parser',
 });
-
 const messageId: MessageIds = 'noOutputOnPrefix';
 
 ruleTester.run(RULE_NAME, rule, {
   valid: [
     `
     @Component()
-    class ButtonComponent {
-      @Output() change = new EventEmitter<any>();
+    class Test {
+      on = new EventEmitter();
     }
-`,
+    `,
+    `
+    @Directive()
+    class Test {
+      @Output() buttonChange = new EventEmitter<'on'>();
+    }
+    `,
     `
     @Component()
-    class ButtonComponent {
-      @Output() oneProp = new EventEmitter<any>();
+    class Test {
+      @Output() On = new EventEmitter<{ on: onType }>();
     }
-      `,
+    `,
+    `
+    @Directive()
+    class Test {
+      @Output(\`one\`) ontype = new EventEmitter<{ bar: string, on: boolean }>();
+    }
+    `,
     `
     @Component()
-    class SelectComponent {
-      @Output() selectionChanged = new EventEmitter<any>();
+    class Test {
+      @Output('oneProp') common = new EventEmitter<ComplextOn>();
     }
-`,
+    `,
+    `
+    @Directive()
+    class Test<On> {
+      @Output() ON = new EventEmitter<On>();
+    }
+    `,
+    `
+    const on = 'on';
+    @Component()
+    class Test {
+      @Output(on) touchMove: EventEmitter<{ action: 'on' | 'off' }> = new EventEmitter<{ action: 'on' | 'off' }>();
+    }
+    `,
+    `
+    const test = 'on';
+    const on = 'on';
+    @Directive()
+    class Test {
+      @Output(test) [on]: EventEmitter<OnTest>;
+    }
+    `,
   ],
   invalid: [
     convertAnnotatedSourceToFailureCase({
       description:
-        'it should fail when a component output property is named with on prefix',
+        'should fail if output property is named "on" in `@Component`',
       annotatedSource: `
         @Component()
-        class ButtonComponent {
-          @Output() onChange = new EventEmitter<any>();
-          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        class Test {
+          @Output() on: EventEmitter<any> = new EventEmitter<{}>();
+                    ~~
         }
       `,
       messageId,
-      data: {
-        className: 'ButtonComponent',
-        memberName: 'onChange',
-      },
     }),
     convertAnnotatedSourceToFailureCase({
       description:
-        'it should fail when a directive output property is named with on prefix',
+        'should fail if output property is named with "\'on\'" prefix in `@Directive`',
       annotatedSource: `
         @Directive()
-        class ButtonDirective {
-          @Output() onChange = new EventEmitter<any>();
-          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        class Test {
+          @Output() @Custom('on') 'onPrefix' = new EventEmitter<void>();
+                                  ~~~~~~~~~~
         }
       `,
       messageId,
-      data: {
-        className: 'ButtonDirective',
-        memberName: 'onChange',
-      },
     }),
     convertAnnotatedSourceToFailureCase({
       description:
-        'it should fail when a directive output property is named with on prefix',
+        'should fail if output property is aliased as "`on`" in `@Component`',
       annotatedSource: `
-        @Directive()
-        class ButtonDirective {
-          @Output() on = new EventEmitter<any>();
-          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        @Component()
+        class Test {
+          @Custom() @Output(\`on\`) _on = getOutput();
+                            ~~~~
         }
       `,
       messageId,
-      data: {
-        className: 'ButtonDirective',
-        memberName: 'on',
-      },
     }),
     convertAnnotatedSourceToFailureCase({
       description:
-        'it should correctly identify the class and member names when the class is exported',
+        'should fail if output property is aliased with "on" prefix in `@Directive`',
       annotatedSource: `
         @Directive()
-        export class ButtonDirective {
-          @Output() on = new EventEmitter<any>();
-          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        class Test {
+          @Output('onPrefix') _on = (this.subject$ as Subject<{on: boolean}>).pipe();
+                  ~~~~~~~~~~
         }
       `,
       messageId,
-      data: {
-        className: 'ButtonDirective',
-        memberName: 'on',
-      },
+    }),
+    convertAnnotatedSourceToFailureCase({
+      description:
+        'should fail if output property is named with prefix "on" and aliased as "on" without `@Component` or `@Directive`',
+      annotatedSource: `
+        @Injectable()
+        class Test {
+          @Output('on') onPrefix = this.getOutput();
+                  ~~~~  ^^^^^^^^
+        }
+      `,
+      messages: [
+        { char: '~', messageId },
+        { char: '^', messageId },
+      ],
     }),
   ],
 });

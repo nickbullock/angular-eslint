@@ -1,26 +1,26 @@
-import type { TSESLint } from '@typescript-eslint/experimental-utils';
+import type { ParseSourceSpan, TmplAstElement } from '@angular/compiler';
+import type { TSESLint, TSESTree } from '@typescript-eslint/experimental-utils';
 import { ESLintUtils } from '@typescript-eslint/experimental-utils';
 
 export const createESLintRule = ESLintUtils.RuleCreator(
   (_ruleName) => `https://github.com/angular-eslint/angular-eslint`,
 );
 
-interface SourceSpan {
-  start: { line: number; col: any };
-  end: { line: number; col: any };
-}
-
 interface ParserServices {
-  convertNodeSourceSpanToLoc: (sourceSpan: SourceSpan) => any;
-  convertElementSourceSpanToLoc: <TMessageIds extends string>(
-    context: TSESLint.RuleContext<TMessageIds, []>,
-    node: any,
-  ) => any;
+  convertNodeSourceSpanToLoc: (
+    sourceSpan: ParseSourceSpan,
+  ) => TSESTree.SourceLocation;
+  convertElementSourceSpanToLoc: (
+    context: Readonly<TSESLint.RuleContext<string, readonly unknown[]>>,
+    node: TmplAstElement,
+  ) => TSESTree.SourceLocation;
 }
 
-export function getTemplateParserServices(context: any): ParserServices {
+export function getTemplateParserServices(
+  context: Readonly<TSESLint.RuleContext<string, readonly unknown[]>>,
+): ParserServices {
   ensureTemplateParser(context);
-  return context.parserServices;
+  return context.parserServices as unknown as ParserServices;
 }
 
 /**
@@ -28,12 +28,12 @@ export function getTemplateParserServices(context: any): ParserServices {
  * If @angular-eslint/template-parser is not the configured parser when the function is invoked it will throw
  */
 export function ensureTemplateParser(
-  context: TSESLint.RuleContext<string, readonly unknown[]>,
-) {
+  context: Readonly<TSESLint.RuleContext<string, readonly unknown[]>>,
+): void {
   if (
-    !((context.parserServices as unknown) as ParserServices)
+    !(context.parserServices as unknown as ParserServices)
       ?.convertNodeSourceSpanToLoc ||
-    !((context.parserServices as unknown) as ParserServices)
+    !(context.parserServices as unknown as ParserServices)
       ?.convertElementSourceSpanToLoc
   ) {
     /**

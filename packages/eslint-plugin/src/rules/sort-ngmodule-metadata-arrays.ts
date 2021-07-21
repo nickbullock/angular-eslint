@@ -1,13 +1,9 @@
+import type { NgModule } from '@angular/compiler/src/core';
 import type { TSESTree } from '@typescript-eslint/experimental-utils';
+import { ASTUtils } from '@typescript-eslint/experimental-utils';
 import { createESLintRule } from '../utils/create-eslint-rule';
 import { MODULE_CLASS_DECORATOR } from '../utils/selectors';
-import {
-  getDecoratorPropertyValue,
-  isArrayExpression,
-  isIdentifier,
-} from '../utils/utils';
-
-import type { NgModule } from '@angular/compiler/src/core';
+import { getDecoratorPropertyValue, isArrayExpression } from '../utils/utils';
 
 type Options = [];
 export const RULE_NAME = 'sort-ngmodule-metadata-arrays';
@@ -32,6 +28,7 @@ export default createESLintRule<Options, MessageIds>({
       category: 'Best Practices',
       recommended: false,
     },
+    fixable: 'code',
     schema: [],
     messages: {
       sortNgmoduleMetadataArrays:
@@ -51,18 +48,26 @@ export default createESLintRule<Options, MessageIds>({
           ) {
             return;
           }
-          const unorderedNode = initializer.elements
-            .filter(isIdentifier)
-            .find(({ name }, index, list) => {
-              const nextElementName = list[index + 1]?.name;
-              return (
-                nextElementName && name.localeCompare(nextElementName) === 1
-              );
+          const unorderedNodes = initializer.elements
+            .filter(ASTUtils.isIdentifier)
+            .map((current, index, list) => {
+              return [current, list[index + 1]];
+            })
+            .find(([current, next]) => {
+              return next && current.name.localeCompare(next.name) === 1;
             });
-          if (!unorderedNode) return;
+          if (!unorderedNodes) return;
+
+          const [unorderedNode, nextNode] = unorderedNodes;
           context.report({
             messageId: 'sortNgmoduleMetadataArrays',
             node: unorderedNode,
+            fix: (fixer) => {
+              return [
+                fixer.replaceText(unorderedNode, nextNode.name),
+                fixer.replaceText(nextNode, unorderedNode.name),
+              ];
+            },
           });
         });
       },

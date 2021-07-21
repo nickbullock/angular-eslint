@@ -1,21 +1,26 @@
 import type { TSESTree } from '@typescript-eslint/experimental-utils';
+import { ASTUtils } from '@typescript-eslint/experimental-utils';
 import { createESLintRule } from '../utils/create-eslint-rule';
 import {
-  getDecoratorPropertyValue,
-  isIdentifier,
-  isLiteral,
-  isCallExpression,
-  kebabToCamelCase,
   AngularClassDecorators,
+  getDecoratorPropertyValue,
+  isCallExpression,
   isImportedFrom,
+  isStringLiteral,
+  kebabToCamelCase,
 } from '../utils/utils';
 
-type Options = [];
+type Options = [
+  {
+    readonly allowedNames?: readonly string[];
+  },
+];
 export type MessageIds = 'noInputRename';
 export const RULE_NAME = 'no-input-rename';
+const STYLE_GUIDE_LINK = 'https://angular.io/guide/styleguide#style-05-13';
 
 // source: https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/ARIA_Techniques
-const whiteListAliases = new Set<string>([
+const safelistAliases = new Set<string>([
   'aria-activedescendant',
   'aria-atomic',
   'aria-autocomplete',
@@ -64,13 +69,32 @@ export default createESLintRule<Options, MessageIds>({
       category: 'Best Practices',
       recommended: 'error',
     },
-    schema: [],
+    schema: [
+      {
+        type: 'object',
+        properties: {
+          allowedNames: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            description: 'A list with allowed input names',
+            uniqueItems: true,
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
     messages: {
-      noInputRename: `In the class {{className}}, the directive input property {{propertyName}} should not be renamed`,
+      noInputRename: `@Inputs should not be aliased (${STYLE_GUIDE_LINK})`,
     },
   },
-  defaultOptions: [],
-  create(context) {
+  defaultOptions: [
+    {
+      allowedNames: [],
+    },
+  ],
+  create(context, [{ allowedNames = [] }]) {
     return {
       ':matches(ClassProperty, MethodDefinition[kind="set"]) > Decorator[expression.callee.name="Input"]'(
         node: TSESTree.Decorator,
@@ -87,13 +111,14 @@ export default createESLintRule<Options, MessageIds>({
         if (inputCallExpression.arguments.length === 0) return;
 
         // handle directive's selector is also an input property
-        let directiveSelectors: ReadonlyArray<unknown>;
+        let directiveSelectors: readonly string[];
 
         const canPropertyBeAliased = (
           propertyAlias: string,
           propertyName: string,
         ): boolean => {
-          return !!(
+          return (
+            allowedNames.includes(propertyAlias) ||
             (propertyAlias !== propertyName &&
               directiveSelectors &&
               directiveSelectors.some((x) =>
@@ -103,7 +128,7 @@ export default createESLintRule<Options, MessageIds>({
                   }$)|(?=$))`,
                 ).test(propertyAlias),
               )) ||
-            (whiteListAliases.has(propertyAlias) &&
+            (safelistAliases.has(propertyAlias) &&
               propertyName === kebabToCamelCase(propertyAlias))
           );
         };
@@ -111,35 +136,33 @@ export default createESLintRule<Options, MessageIds>({
         const classProperty = node.parent as
           | TSESTree.ClassProperty
           | TSESTree.MethodDefinition;
-        const classDeclaration = (classProperty.parent as TSESTree.ClassBody)
+        const { decorators } = (classProperty.parent as TSESTree.ClassBody)
           .parent as TSESTree.ClassDeclaration;
-
-        const decorator =
-          classDeclaration.decorators &&
-          classDeclaration.decorators.find(
-            (decorator) =>
-              isCallExpression(decorator.expression) &&
-              isIdentifier(decorator.expression.callee) &&
-              decorator.expression.callee.name ===
-                AngularClassDecorators.Directive,
-          );
+        const decorator = decorators?.find(
+          (decorator) =>
+            isCallExpression(decorator.expression) &&
+            ASTUtils.isIdentifier(decorator.expression.callee) &&
+            decorator.expression.callee.name ===
+              AngularClassDecorators.Directive,
+        );
 
         if (decorator) {
           const selector = getDecoratorPropertyValue(decorator, 'selector');
 
-          if (selector && isLiteral(selector) && selector.value) {
-            directiveSelectors = (selector.value.toString() || '')
+          if (selector && isStringLiteral(selector)) {
+            directiveSelectors = selector.value
               .replace(/[[\]\s]/g, '')
               .split(',');
           }
         }
 
-        const propertyAlias = (inputCallExpression
-          .arguments[0] as TSESTree.Literal).value;
+        const propertyAlias = (
+          inputCallExpression.arguments[0] as TSESTree.Literal
+        ).value;
 
         if (
           propertyAlias &&
-          isIdentifier(classProperty.key) &&
+          ASTUtils.isIdentifier(classProperty.key) &&
           canPropertyBeAliased(propertyAlias.toString(), classProperty.key.name)
         )
           return;
@@ -147,10 +170,6 @@ export default createESLintRule<Options, MessageIds>({
         context.report({
           node: classProperty,
           messageId: 'noInputRename',
-          data: {
-            className: classDeclaration.id && classDeclaration.id.name,
-            propertyName: (classProperty.key as TSESTree.Identifier).name,
-          },
         });
       },
     };

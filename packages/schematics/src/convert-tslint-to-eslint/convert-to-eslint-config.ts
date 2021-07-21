@@ -6,9 +6,9 @@ import { dirSync } from 'tmp';
 import type * as TslintToEslintConfig from 'tslint-to-eslint-config';
 import { readJsonInTree, visitNotIgnoredFiles } from '../utils';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const tslintToEslintConfigVersion = require('../../package.json')
-  .devDependencies['tslint-to-eslint-config'];
+const tslintToEslintConfigVersion =
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  require('../../package.json').devDependencies['tslint-to-eslint-config'];
 
 type TslintToEslintConfigLibrary = {
   createESLintConfiguration: typeof TslintToEslintConfig['createESLintConfiguration'];
@@ -172,8 +172,7 @@ export function convertTSLintDisableCommentsForProject(
       if (!filePath.endsWith('.ts')) {
         return;
       }
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const fileContent = host.read(filePath)!.toString('utf-8');
+      const fileContent = (host.read(filePath) as Buffer).toString('utf-8');
       // Avoid updating files if we don't have to
       if (!likelyContainsTSLintComment(fileContent)) {
         return;

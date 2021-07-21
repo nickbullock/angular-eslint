@@ -1,7 +1,7 @@
 import all from './configs/all.json';
 import base from './configs/base.json';
-import recommended from './configs/recommended.json';
 import processInlineTemplates from './configs/process-inline-templates.json';
+import recommended from './configs/recommended.json';
 import processors from './processors';
 import accessibilityAltText, {
   RULE_NAME as accessibilityAltTextRuleName,
@@ -12,6 +12,9 @@ import accessibilityElementsContent, {
 import accessibilityLabelFor, {
   RULE_NAME as accessibilityLabelForRuleName,
 } from './rules/accessibility-label-for';
+import accessibilityLabelHasAssociatedControl, {
+  RULE_NAME as accessibilityLabelHasAssociatedControlRuleName,
+} from './rules/accessibility-label-has-associated-control';
 import accessibilityTableScope, {
   RULE_NAME as accessibilityTableScopeRuleName,
 } from './rules/accessibility-table-scope';
@@ -30,6 +33,7 @@ import conditionalСomplexity, {
 import cyclomaticComplexity, {
   RULE_NAME as cyclomaticComplexityRuleName,
 } from './rules/cyclomatic-complexity';
+import eqeqeq, { RULE_NAME as eqeqeqRuleName } from './rules/eqeqeq';
 import i18n, { RULE_NAME as i18nRuleName } from './rules/i18n';
 import mouseEventsHaveKeyEvents, {
   RULE_NAME as mouseEventsHaveKeyEventsRuleName,
@@ -57,6 +61,10 @@ import useTrackByFunction, {
   RULE_NAME as useTrackByFunctionRuleName,
 } from './rules/use-track-by-function';
 
+import attributesOrder, {
+  RULE_NAME as attributesOrderRuleName,
+} from './rules/attributes-order';
+
 export default {
   configs: {
     all,
@@ -69,12 +77,15 @@ export default {
     [accessibilityAltTextRuleName]: accessibilityAltText,
     [accessibilityElementsContentRuleName]: accessibilityElementsContent,
     [accessibilityLabelForRuleName]: accessibilityLabelFor,
+    [accessibilityLabelHasAssociatedControlRuleName]:
+      accessibilityLabelHasAssociatedControl,
     [accessibilityTableScopeRuleName]: accessibilityTableScope,
     [accessibilityValidAriaRuleName]: accessibilityValidAria,
     [bananaInBoxRuleName]: bananaInBox,
     [conditionalСomplexityRuleName]: conditionalСomplexity,
     [clickEventsHaveKeyEventsRuleName]: clickEventsHaveKeyEvents,
     [cyclomaticComplexityRuleName]: cyclomaticComplexity,
+    [eqeqeqRuleName]: eqeqeq,
     [i18nRuleName]: i18n,
     [mouseEventsHaveKeyEventsRuleName]: mouseEventsHaveKeyEvents,
     [noAnyRuleName]: noAny,
@@ -85,5 +96,6 @@ export default {
     [noNegatedAsyncRuleName]: noNegatedAsync,
     [noPositiveTabindexRuleName]: noPositiveTabindex,
     [useTrackByFunctionRuleName]: useTrackByFunction,
+    [attributesOrderRuleName]: attributesOrder,
   },
 };

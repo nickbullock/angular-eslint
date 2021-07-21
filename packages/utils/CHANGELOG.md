@@ -3,6 +3,34 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [12.2.0](https://github.com/angular-eslint/angular-eslint/compare/v12.1.0...v12.2.0) (2021-06-20)
+
+**Note:** Version bump only for package @angular-eslint/utils
+
+# [12.1.0](https://github.com/angular-eslint/angular-eslint/compare/v12.0.0...v12.1.0) (2021-05-30)
+
+### Bug Fixes
+
+- **utils:** support passing `data` and `suggestions` individually for each error ([#491](https://github.com/angular-eslint/angular-eslint/issues/491)) ([70b01bd](https://github.com/angular-eslint/angular-eslint/commit/70b01bd83ddcaf3c57cab0701edb424dabf3a25f))
+
+### Features
+
+- **utils:** add support for suggestions ([#458](https://github.com/angular-eslint/angular-eslint/issues/458)) ([0ea02ae](https://github.com/angular-eslint/angular-eslint/commit/0ea02ae3d54137347de33614803cc6fb72759080))
+
+# [12.0.0](https://github.com/angular-eslint/angular-eslint/compare/v4.3.0...v12.0.0) (2021-05-13)
+
+### Features
+
+- update eslint to ^7.26.0, [@typescript-eslint](https://github.com/typescript-eslint) to 4.23.0 ([9e31c38](https://github.com/angular-eslint/angular-eslint/commit/9e31c3881a13d6ce3b642b9c23c67e2e0f2d1aa1))
+
+# [4.3.0](https://github.com/angular-eslint/angular-eslint/compare/v4.2.1...v4.3.0) (2021-05-12)
+
+**Note:** Version bump only for package @angular-eslint/utils
+
+## [4.2.1](https://github.com/angular-eslint/angular-eslint/compare/v4.2.0...v4.2.1) (2021-05-12)
+
+**Note:** Version bump only for package @angular-eslint/utils
+
 # [4.2.0](https://github.com/angular-eslint/angular-eslint/compare/v4.1.0...v4.2.0) (2021-04-28)
 
 **Note:** Version bump only for package @angular-eslint/utils

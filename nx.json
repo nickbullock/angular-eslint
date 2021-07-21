@@ -1,12 +1,12 @@
 {
   "npmScope": "angular-eslint",
   "implicitDependencies": {
-    "workspace.json": "*",
     "package.json": {
       "dependencies": "*",
       "devDependencies": "*"
     },
-    "nx.json": "*"
+    ".eslintrc.json": "*",
+    ".github/workflows/ci.yml": "*"
   },
   "workspaceLayout": {
     "libsDir": "packages"
@@ -21,8 +21,9 @@
           "test",
           "lint",
           "e2e",
-          "integration-tests",
-          "check-configs"
+          "integration-test",
+          "check-configs",
+          "typecheck"
         ],
         "runtimeCacheInputs": ["node --version"],
         "canTrackAnalytics": false,
@@ -30,18 +31,36 @@
       }
     }
   },
+  "targetDependencies": {
+    "build": [
+      {
+        "target": "build",
+        "projects": "dependencies"
+      }
+    ],
+    "typecheck": [
+      {
+        "target": "build",
+        "projects": "dependencies"
+      }
+    ],
+    "test": [
+      {
+        "target": "build",
+        "projects": "dependencies"
+      }
+    ],
+    "integration-test": [
+      {
+        "target": "build",
+        "projects": "dependencies"
+      }
+    ]
+  },
   "projects": {
-    "builder": {
-      "implicitDependencies": []
-    },
-    "eslint-plugin": {
-      "implicitDependencies": []
-    },
-    "eslint-plugin-template": {
-      "implicitDependencies": []
-    },
-    "integration-tests": {
+    "integration-tests-suite-1": {
       "implicitDependencies": [
+        "integration-tests",
         "builder",
         "eslint-plugin",
         "eslint-plugin-template",
@@ -50,14 +69,49 @@
         "utils"
       ]
     },
-    "schematics": {
-      "implicitDependencies": []
+    "integration-tests-suite-2": {
+      "implicitDependencies": [
+        "integration-tests",
+        "builder",
+        "eslint-plugin",
+        "eslint-plugin-template",
+        "schematics",
+        "template-parser",
+        "utils"
+      ]
     },
-    "template-parser": {
-      "implicitDependencies": []
+    "integration-tests-suite-3": {
+      "implicitDependencies": [
+        "integration-tests",
+        "builder",
+        "eslint-plugin",
+        "eslint-plugin-template",
+        "schematics",
+        "template-parser",
+        "utils"
+      ]
     },
-    "utils": {
-      "implicitDependencies": []
+    "integration-tests-suite-4": {
+      "implicitDependencies": [
+        "integration-tests",
+        "builder",
+        "eslint-plugin",
+        "eslint-plugin-template",
+        "schematics",
+        "template-parser",
+        "utils"
+      ]
+    },
+    "integration-tests-suite-5": {
+      "implicitDependencies": [
+        "integration-tests",
+        "builder",
+        "eslint-plugin",
+        "eslint-plugin-template",
+        "schematics",
+        "template-parser",
+        "utils"
+      ]
     }
   },
   "affected": {

@@ -1,17 +1,10 @@
 {
   "name": "@angular-eslint/schematics",
-  "version": "4.2.0",
+  "version": "12.2.0",
   "description": "Angular Schematics for angular-eslint",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "scripts": {
-    "prebuild": "ncp ../../node_modules/@schematics/angular/application/schema.json src/application/schema.json && ncp ../../node_modules/@schematics/angular/library/schema.json src/library/schema.json",
-    "build": "rimraf ./dist && tsc -p tsconfig.json && ncp src/collection.json dist/collection.json && ncp src/migrations.json dist/migrations.json && ncp src/ng-add/schema.json dist/ng-add/schema.json && ncp src/convert-tslint-to-eslint/schema.json dist/convert-tslint-to-eslint/schema.json && ncp src/application/schema.json dist/application/schema.json && ncp src/library/schema.json dist/library/schema.json && ncp src/workspace/schema.json dist/workspace/schema.json && ncp src/add-eslint-to-project/schema.json dist/add-eslint-to-project/schema.json",
-    "test": "jest --coverage",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "clean": "rimraf ./dist"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/angular-eslint/angular-eslint.git",
@@ -31,20 +24,20 @@
     "save": "devDependencies"
   },
   "dependencies": {
-    "@angular-eslint/eslint-plugin": "4.2.0",
-    "@angular-eslint/eslint-plugin-template": "4.2.0",
+    "@angular-eslint/eslint-plugin": "12.2.0",
+    "@angular-eslint/eslint-plugin-template": "12.2.0",
     "ignore": "5.1.8",
     "strip-json-comments": "3.1.1",
     "tmp": "0.2.1"
   },
   "devDependencies": {
     "@types/tmp": "0.2.0",
-    "@typescript-eslint/experimental-utils": "4.16.1",
-    "eslint": "^7.6.0",
-    "tslint-to-eslint-config": "^2.3.0"
+    "@typescript-eslint/experimental-utils": "4.23.0",
+    "eslint": "^7.26.0",
+    "tslint-to-eslint-config": "^2.4.0"
   },
   "peerDependencies": {
-    "@angular/cli": ">= 11.2.0 < 12.0.0"
+    "@angular/cli": ">= 12.0.0 < 13.0.0"
   },
-  "gitHead": "e69a6b00613084b68ee0c7b8f5026266c1f6f368"
+  "gitHead": "d1d0e9f61f6a864d14507aa09c4b08c085309e7d"
 }

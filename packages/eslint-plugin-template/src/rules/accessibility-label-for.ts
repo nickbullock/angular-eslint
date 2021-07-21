@@ -34,6 +34,8 @@ const DEFAULT_LABEL_COMPONENTS = ['label'] as const;
 export default createESLintRule<Options, MessageIds>({
   name: RULE_NAME,
   meta: {
+    deprecated: true,
+    replacedBy: ['accessibility-label-has-associated-control'],
     type: 'suggestion',
     docs: {
       description:
@@ -66,11 +68,8 @@ export default createESLintRule<Options, MessageIds>({
   ],
   create(context, [options]) {
     const parserServices = getTemplateParserServices(context);
-    const {
-      controlComponents,
-      labelAttributes,
-      labelComponents,
-    } = getParsedOptions(options);
+    const { controlComponents, labelAttributes, labelComponents } =
+      getParsedOptions(options);
     const labelComponentsPattern = toPattern([...labelComponents]);
 
     return {

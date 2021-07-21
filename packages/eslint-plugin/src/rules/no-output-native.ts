@@ -1,6 +1,7 @@
 import type { TSESTree } from '@typescript-eslint/experimental-utils';
 import { createESLintRule } from '../utils/create-eslint-rule';
-import { isLiteral, getClassName, getClassPropertyName } from '../utils/utils';
+import { OUTPUT_DECORATOR } from '../utils/selectors';
+import { toPattern } from '../utils/utils';
 
 type Options = [];
 export type MessageIds = 'noOutputNative';
@@ -11,39 +12,29 @@ export default createESLintRule<Options, MessageIds>({
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Disallows naming directive outputs as standard DOM event.',
+      description: 'Disallows naming or aliasing outputs as standard DOM event',
       category: 'Best Practices',
       recommended: 'error',
     },
     schema: [],
     messages: {
       noOutputNative:
-        'The output property should not be named or renamed as a native event',
+        'Outputs should not be named or aliased as standard DOM event',
     },
   },
   defaultOptions: [],
   create(context) {
+    const nativeEventNames = toPattern([...getNativeEventNames()]);
+    const outputAliasSelector = `ClassProperty ${OUTPUT_DECORATOR} :matches(Literal[value=${nativeEventNames}], TemplateElement[value.raw=${nativeEventNames}])`;
+    const outputPropertySelector = `ClassProperty[computed=false]:has(${OUTPUT_DECORATOR}) > :matches(Identifier[name=${nativeEventNames}], Literal[value=${nativeEventNames}])`;
+    const selectors = [outputAliasSelector, outputPropertySelector].join(',');
+
     return {
-      'ClassProperty > Decorator[expression.callee.name="Output"]'(
-        node: TSESTree.Decorator,
+      [selectors](
+        node: TSESTree.Identifier | TSESTree.Literal | TSESTree.TemplateElement,
       ) {
-        const classProperty = node.parent as TSESTree.ClassProperty;
-        const className = getClassName(node);
-
-        if (!className) return;
-
-        const propertyName = getClassPropertyName(classProperty);
-
-        const outputCallExpression = node.expression as TSESTree.CallExpression;
-        const arg = outputCallExpression.arguments[0];
-
-        const outputName = (arg && isLiteral(arg) && arg.value) || propertyName;
-
-        if (!outputName || !getNativeEventNames().has(outputName.toString()))
-          return;
-
         context.report({
-          node: classProperty,
+          node,
           messageId: 'noOutputNative',
         });
       },

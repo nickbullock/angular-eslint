@@ -1,15 +1,10 @@
 {
   "name": "@angular-eslint/utils",
-  "version": "4.2.0",
+  "version": "12.2.0",
   "private": true,
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "rimraf ./dist && tsc",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "clean": "rimraf ./dist"
-  },
   "files": [
     "dist",
     "package.json",
@@ -21,6 +16,6 @@
     "typescript": "*"
   },
   "dependencies": {
-    "@typescript-eslint/experimental-utils": "4.16.1"
+    "@typescript-eslint/experimental-utils": "4.23.0"
   }
 }

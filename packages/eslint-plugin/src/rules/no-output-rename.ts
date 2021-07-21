@@ -1,17 +1,18 @@
 import type { TSESTree } from '@typescript-eslint/experimental-utils';
+import { ASTUtils } from '@typescript-eslint/experimental-utils';
 import { createESLintRule } from '../utils/create-eslint-rule';
 import {
-  getDecoratorPropertyValue,
-  isIdentifier,
-  isLiteral,
-  isCallExpression,
   AngularClassDecorators,
+  getDecoratorPropertyValue,
+  isCallExpression,
   isImportedFrom,
+  isStringLiteral,
 } from '../utils/utils';
 
 type Options = [];
 export type MessageIds = 'noOutputRename';
 export const RULE_NAME = 'no-output-rename';
+const STYLE_GUIDE_LINK = 'https://angular.io/guide/styleguide#style-05-13';
 
 export default createESLintRule<Options, MessageIds>({
   name: RULE_NAME,
@@ -25,7 +26,7 @@ export default createESLintRule<Options, MessageIds>({
     },
     schema: [],
     messages: {
-      noOutputRename: '@Outputs should not be renamed',
+      noOutputRename: `@Outputs should not be aliased (${STYLE_GUIDE_LINK})`,
     },
   },
   defaultOptions: [],
@@ -46,7 +47,7 @@ export default createESLintRule<Options, MessageIds>({
         if (outputCallExpression.arguments.length === 0) return;
 
         // handle directive's selector is also an output property
-        let directiveSelectors: ReadonlySet<any>;
+        let directiveSelectors: ReadonlySet<string>;
 
         const canPropertyBeAliased = (
           propertyAlias: string,
@@ -63,34 +64,31 @@ export default createESLintRule<Options, MessageIds>({
         const classDeclaration = (classProperty.parent as TSESTree.ClassBody)
           .parent as TSESTree.ClassDeclaration;
 
-        const decorator =
-          classDeclaration.decorators &&
-          classDeclaration.decorators.find(
-            (decorator) =>
-              isCallExpression(decorator.expression) &&
-              isIdentifier(decorator.expression.callee) &&
-              decorator.expression.callee.name ===
-                AngularClassDecorators.Directive,
-          );
+        const decorator = classDeclaration.decorators?.find(
+          (decorator) =>
+            isCallExpression(decorator.expression) &&
+            ASTUtils.isIdentifier(decorator.expression.callee) &&
+            decorator.expression.callee.name ===
+              AngularClassDecorators.Directive,
+        );
 
         if (decorator) {
           const selector = getDecoratorPropertyValue(decorator, 'selector');
 
-          if (selector && isLiteral(selector) && selector.value) {
+          if (selector && isStringLiteral(selector)) {
             directiveSelectors = new Set(
-              (selector.value.toString() || '')
-                .replace(/[[\]\s]/g, '')
-                .split(','),
+              selector.value.replace(/[[\]\s]/g, '').split(','),
             );
           }
         }
 
-        const propertyAlias = (outputCallExpression
-          .arguments[0] as TSESTree.Literal).value;
+        const propertyAlias = (
+          outputCallExpression.arguments[0] as TSESTree.Literal
+        ).value;
 
         if (
           propertyAlias &&
-          isIdentifier(classProperty.key) &&
+          ASTUtils.isIdentifier(classProperty.key) &&
           canPropertyBeAliased(propertyAlias.toString(), classProperty.key.name)
         )
           return;

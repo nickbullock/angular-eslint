@@ -6,7 +6,7 @@
  */
 import { Architect } from '@angular-devkit/architect';
 import { TestingArchitectHost } from '@angular-devkit/architect/testing';
-import { logging, schema } from '@angular-devkit/core';
+import { json, logging, schema } from '@angular-devkit/core';
 import type { ESLint } from 'eslint';
 import { resolve } from 'path';
 import type { Schema } from '../src/schema';
@@ -60,6 +60,7 @@ function createValidRunBuilderOptions(
     fix: true,
     cache: true,
     cacheLocation: 'cacheLocation1',
+    cacheStrategy: 'content',
     format: 'stylish',
     force: false,
     quiet: false,
@@ -79,7 +80,7 @@ function setupMocks() {
 }
 
 async function runBuilder(options: Schema) {
-  const registry = new schema.CoreSchemaRegistry();
+  const registry = new json.schema.CoreSchemaRegistry();
   registry.addPostTransform(schema.transforms.addUndefinedDefaults);
 
   const testArchitectHost = new TestingArchitectHost(
@@ -102,7 +103,7 @@ async function runBuilder(options: Schema) {
   logger.subscribe(loggerSpy);
 
   const run = await architect.scheduleBuilder(builderName, options, {
-    logger: logger as any,
+    logger,
   });
 
   return run.result;
@@ -146,6 +147,7 @@ describe('Linter Builder', () => {
         quiet: false,
         cache: true,
         cacheLocation: 'cacheLocation1',
+        cacheStrategy: 'content',
         format: 'stylish',
         force: false,
         silent: false,
@@ -153,20 +155,25 @@ describe('Linter Builder', () => {
         ignorePath: null,
       }),
     );
-    expect(lint).toHaveBeenCalledWith('/root', resolve('/root/.eslintrc'), {
-      lintFilePatterns: [],
-      eslintConfig: './.eslintrc',
-      exclude: ['excludedFile1'],
-      fix: true,
-      quiet: false,
-      cache: true,
-      cacheLocation: 'cacheLocation1',
-      format: 'stylish',
-      force: false,
-      silent: false,
-      maxWarnings: -1,
-      ignorePath: null,
-    });
+    expect(lint).toHaveBeenCalledWith(
+      resolve('/root'),
+      resolve('/root/.eslintrc'),
+      {
+        lintFilePatterns: [],
+        eslintConfig: './.eslintrc',
+        exclude: ['excludedFile1'],
+        fix: true,
+        quiet: false,
+        cache: true,
+        cacheLocation: 'cacheLocation1',
+        cacheStrategy: 'content',
+        format: 'stylish',
+        force: false,
+        silent: false,
+        maxWarnings: -1,
+        ignorePath: null,
+      },
+    );
   });
 
   it('should throw if no reports generated', async () => {

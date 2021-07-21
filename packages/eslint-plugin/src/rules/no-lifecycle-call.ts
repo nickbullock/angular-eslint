@@ -1,14 +1,14 @@
 import type { TSESTree } from '@typescript-eslint/experimental-utils';
+import { ASTUtils } from '@typescript-eslint/experimental-utils';
 import { createESLintRule } from '../utils/create-eslint-rule';
 import {
   ANGULAR_LIFECYCLE_METHODS,
-  isSuper,
-  isClassDeclaration,
-  isIdentifier,
-  isMethodDefinition,
-  toPattern,
   getAngularClassDecorator,
   getNearestNodeFrom,
+  isClassDeclaration,
+  isMethodDefinition,
+  isSuper,
+  toPattern,
 } from '../utils/utils';
 
 type Options = [];
@@ -36,34 +36,34 @@ export default createESLintRule<Options, MessageIds>({
     ]);
 
     return {
-      [`ClassDeclaration MemberExpression[property.name=${angularLifeCycleMethodsPattern}]`]: (
-        node: TSESTree.MemberExpression,
-      ) => {
-        if (
-          !getAngularClassDecorator(getClassDeclaration(node)!) ||
-          (isSuper(node.object) && isSuperCallAllowed(node))
-        ) {
-          return;
-        }
+      [`ClassDeclaration CallExpression > MemberExpression[property.name=${angularLifeCycleMethodsPattern}]`]:
+        (
+          node: TSESTree.MemberExpression & { parent: TSESTree.CallExpression },
+        ) => {
+          const classDeclaration = getNearestNodeFrom(node, isClassDeclaration);
 
-        context.report({ node: node.parent!, messageId: 'noLifecycleCall' });
-      },
+          if (
+            !classDeclaration ||
+            !getAngularClassDecorator(classDeclaration) ||
+            (isSuper(node.object) && isSuperCallAllowed(node))
+          ) {
+            return;
+          }
+
+          context.report({ node: node.parent, messageId: 'noLifecycleCall' });
+        },
     };
   },
 });
-
-function getClassDeclaration(
-  node: TSESTree.MemberExpression,
-): TSESTree.ClassDeclaration | null {
-  return getNearestNodeFrom(node, isClassDeclaration);
-}
 
 function hasSameName(
   { property }: TSESTree.MemberExpression,
   { key }: TSESTree.MethodDefinition,
 ): boolean {
   return (
-    isIdentifier(property) && isIdentifier(key) && property.name === key.name
+    ASTUtils.isIdentifier(property) &&
+    ASTUtils.isIdentifier(key) &&
+    property.name === key.name
   );
 }
 
